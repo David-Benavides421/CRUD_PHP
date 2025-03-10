@@ -1,29 +1,22 @@
 <?php
+require 'db.php';
 session_start();
-if (!isset($_SESSION['user_id'])) {
+
+if (!isset($_SESSION['usuario']) || $_SESSION['rol'] !== 'admin') {
     header("Location: index.html");
     exit();
 }
-if ($_SESSION['role'] !== 'admin') {
-    echo "No tienes permiso para acceder a esta sección.";
-    exit();
-}
-
-include('db.php');
 
 if (!isset($_GET['id'])) {
-    echo "ID no especificado.";
-    exit();
+    die("ID de usuario no proporcionado.");
 }
 
 $id = $_GET['id'];
+$stmt = $pdo->prepare("DELETE FROM usuarios WHERE id = ?");
 
-$stmt = $conn->prepare("DELETE FROM productos WHERE id=?");
-$stmt->bind_param("i", $id);
-if ($stmt->execute()) {
-    echo "Producto eliminado con éxito. <a href='read.php'>Volver</a>";
+if ($stmt->execute([$id])) {
+    header("Location: read.php");
 } else {
-    echo "Error al eliminar: " . $conn->error;
+    echo "Error al eliminar usuario.";
 }
-$stmt->close();
 ?>

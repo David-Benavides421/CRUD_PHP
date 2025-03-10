@@ -1,50 +1,47 @@
 <?php
+require 'db.php';
 session_start();
-if (!isset($_SESSION['user_id'])) {
+
+if (!isset($_SESSION['usuario']) || $_SESSION['rol'] !== 'admin') {
     header("Location: index.html");
     exit();
 }
-// Si deseas que solo los administradores vean la lista completa, descomenta la siguiente línea:
-// if ($_SESSION['role'] !== 'admin') { echo "No tienes permiso para acceder a esta sección."; exit(); }
 
-include('db.php');
+$stmt = $pdo->query("SELECT id, nombre, email, rol FROM usuarios");
+$usuarios = $stmt->fetchAll();
 ?>
+
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-    <title>Lista de Productos</title>
+    <meta charset="UTF-8">
+    <title>Lista de Usuarios</title>
 </head>
 <body>
-    <h1>Lista de Productos</h1>
-    <table border="1">
+    <h1>Lista de Usuarios</h1>
+    
         <tr>
             <th>ID</th>
             <th>Nombre</th>
-            <th>Precio</th>
-            <?php if ($_SESSION['role'] === 'admin'): ?>
-                <th>Acciones</th>
-            <?php endif; ?>
+            <th>Email</th>
+            <th>Rol</th>
+            <th>Acciones</th>
         </tr>
-        <?php
-        $result = $conn->query("SELECT * FROM productos");
-        while ($row = $result->fetch_assoc()) {
-            echo "<tr>";
-            echo "<td>".$row['id']."</td>";
-            echo "<td>".$row['nombre']."</td>";
-            echo "<td>".$row['precio']."</td>";
-            if ($_SESSION['role'] === 'admin') {
-                echo "<td>
-                      <a href='update.php?id=".$row['id']."'>Editar</a> |
-                      <a href='delete.php?id=".$row['id']."'>Eliminar</a>
-                      </td>";
-            }
-            echo "</tr>";
-        }
-        ?>
+        <?php foreach ($usuarios as $usuario): ?>
+            <tr>
+                <td><?php echo $usuario['id']; ?></td>
+                <td><?php echo htmlspecialchars($usuario['nombre']); ?></td>
+                <td><?php echo htmlspecialchars($usuario['email']); ?></td>
+                <td><?php echo htmlspecialchars($usuario['rol']); ?></td>
+                <td>
+                    <a href="update.php?id=<?php echo $usuario['id']; ?>">Editar</a>
+                    <a href="delete.php?id=<?php echo $usuario['id']; ?>" onclick="return confirm('¿Seguro que deseas eliminar este usuario?');">Eliminar</a>
+                </td>
+            </tr>
+        <?php endforeach; ?>
     </table>
     <br>
-    <?php if ($_SESSION['role'] === 'admin'): ?>
-        <a href="create.php">Crear nuevo producto</a>
-    <?php endif; ?>
+    <a href="admin_dashboard.php">Volver</a>
 </body>
 </html>
+

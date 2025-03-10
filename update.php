@@ -1,60 +1,62 @@
 <?php
+require 'db.php';
 session_start();
-if (!isset($_SESSION['user_id'])) {
+
+if (!isset($_SESSION['usuario']) || $_SESSION['rol'] !== 'admin') {
     header("Location: index.html");
     exit();
 }
-if ($_SESSION['role'] !== 'admin') {
-    echo "No tienes permiso para acceder a esta sección.";
-    exit();
-}
-
-include('db.php');
 
 if (!isset($_GET['id'])) {
-    echo "ID no especificado.";
-    exit();
+    die("ID de usuario no proporcionado.");
 }
 
 $id = $_GET['id'];
+$stmt = $pdo->prepare("SELECT nombre, email, rol FROM usuarios WHERE id = ?");
+$stmt->execute([$id]);
+$usuario = $stmt->fetch();
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $nombre = $_POST['nombre'];
-    $precio = $_POST['precio'];
-
-    $stmt = $conn->prepare("UPDATE productos SET nombre=?, precio=? WHERE id=?");
-    $stmt->bind_param("sdi", $nombre, $precio, $id);
-    if ($stmt->execute()) {
-        echo "Producto actualizado con éxito. <a href='read.php'>Volver</a>";
-    } else {
-        echo "Error al actualizar: " . $conn->error;
-    }
-    $stmt->close();
-    exit();
+if (!$usuario) {
+    die("Usuario no encontrado.");
 }
 
-$stmt = $conn->prepare("SELECT * FROM productos WHERE id=?");
-$stmt->bind_param("i", $id);
-$stmt->execute();
-$result = $stmt->get_result();
-$product = $result->fetch_assoc();
-$stmt->close();
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $nombre = trim($_POST['nombre']);
+    $email = trim($_POST['email']);
+    $rol = $_POST['rol'];
+
+    $stmt = $pdo->prepare("UPDATE usuarios SET nombre = ?, email = ?, rol = ? WHERE id = ?");
+    if ($stmt->execute([$nombre, $email, $rol, $id])) {
+        header("Location: read.php");
+    } else {
+        echo "Error al actualizar usuario.";
+    }
+}
 ?>
+
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-    <title>Editar Producto</title>
+    <meta charset="UTF-8">
+    <title>Editar Usuario</title>
 </head>
 <body>
-    <h1>Editar Producto</h1>
+    <h1>Editar Usuario</h1>
     <form method="POST">
-        <label>Nombre:</label>
-        <input type="text" name="nombre" value="<?php echo $product['nombre']; ?>" required><br><br>
-        <label>Precio:</label>
-        <input type="number" step="0.01" name="precio" value="<?php echo $product['precio']; ?>" required><br><br>
-        <input type="submit" value="Actualizar">
+        <label>Nombre:</label><br>
+        <input type="text" name="nombre" value="<?php echo htmlspecialchars($usuario['nombre']); ?>" required><br><br>
+
+        <label>Email:</label><br>
+        <input type="email" name="email" value="<?php echo htmlspecialchars($usuario['email']); ?>" required><br><br>
+
+        <label>Rol:</label><br>
+        <select name="rol">
+            <option value="usuario" <?php if ($usuario['rol'] === 'usuario') echo 'selected'; ?>>Usuario</option>
+            <option value="admin" <?php if ($usuario['rol'] === 'admin') echo 'selected'; ?>>Administrador</option>
+        </select><br><br>
+
+        <input type="submit" value="Actualizar Usuario">
     </form>
-    <br>
-    <a href="read.php">Volver a la lista de productos</a>
+    <a href="read.php">Volver</a>
 </body>
 </html>

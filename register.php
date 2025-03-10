@@ -1,31 +1,32 @@
 <?php
-include('db.php'); 
+require 'db.php';
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    
-    $nombre   = $_POST['nombre'];
-    $email    = $_POST['email'];
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $nombre = trim($_POST['nombre']);
+    $email = trim($_POST['email']);
     $password = $_POST['password'];
+    $password_2 = $_POST['password_2'];
+    $rol = 'usuario'; // Por defecto
 
-    
-    $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-
-    
-    $stmt = $conn->prepare("INSERT INTO usuarios (nombre, email, password) VALUES (?, ?, ?)");
-    
-    $stmt->bind_param("sss", $nombre, $email, $hashedPassword);
-
-    
-    if ($stmt->execute()) {
-        echo "¡Usuario registrado con éxito! <a href='index.html'>Iniciar sesión</a>";
-    } else {
-        echo "Error en el registro: " . $conn->error;
+    if ($password !== $password_2) {
+        die("Las contraseñas no coinciden.");
     }
 
-    $stmt->close(); 
-} else {
-    
-    header("Location: register.html");
-    exit();
+    // Verificar si el usuario ya existe
+    $stmt = $pdo->prepare("SELECT id FROM usuarios WHERE email = ?");
+    $stmt->execute([$email]);
+    if ($stmt->fetch()) {
+        die("El correo ya está registrado.");
+    }
+
+    // Encriptar contraseña
+    $password_hash = password_hash($password, PASSWORD_BCRYPT);
+
+    // Insertar en la base de datos
+    $stmt = $pdo->prepare("INSERT INTO usuarios (nombre, email, password, rol) VALUES (?, ?, ?, ?)");
+    if ($stmt->execute([$nombre, $email, $password_hash, $rol])) {
+        header("Location: index.html");
+    } else {
+        die("Error al registrar usuario.");
+    }
 }
-?>

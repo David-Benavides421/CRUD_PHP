@@ -1,47 +1,53 @@
 <?php
+require 'db.php';
 session_start();
-if (!isset($_SESSION['user_id'])) {
+
+if (!isset($_SESSION['usuario']) || $_SESSION['rol'] !== 'admin') {
     header("Location: index.html");
     exit();
 }
-if ($_SESSION['role'] !== 'admin') {
-    echo "No tienes permiso para acceder a esta sección.";
-    exit();
-}
 
-include('db.php'); // Conexión MySQLi
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $nombre = trim($_POST['nombre']);
+    $email = trim($_POST['email']);
+    $password = password_hash($_POST['password'], PASSWORD_BCRYPT);
+    $rol = $_POST['rol'];
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $nombre = $_POST['nombre'];
-    $precio = $_POST['precio'];
-
-    // Preparamos la consulta para insertar un nuevo producto
-    $stmt = $conn->prepare("INSERT INTO productos (nombre, precio) VALUES (?, ?)");
-    $stmt->bind_param("sd", $nombre, $precio); // "s" string, "d" double
-
-    if ($stmt->execute()) {
-        echo "¡Producto creado con éxito! <a href='read.php'>Ver productos</a>";
+    $stmt = $pdo->prepare("INSERT INTO usuarios (nombre, email, password, rol) VALUES (?, ?, ?, ?)");
+    if ($stmt->execute([$nombre, $email, $password, $rol])) {
+        header("Location: read.php");
     } else {
-        echo "Error al crear producto: " . $conn->error;
+        echo "Error al crear usuario.";
     }
-    $stmt->close();
 }
 ?>
+
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-    <title>Crear Producto</title>
+    <meta charset="UTF-8">
+    <title>Crear Usuario</title>
 </head>
 <body>
-    <h1>Crear Producto</h1>
+    <h1>Crear Nuevo Usuario</h1>
     <form method="POST">
-        <label>Nombre:</label>
+        <label>Nombre:</label><br>
         <input type="text" name="nombre" required><br><br>
-        <label>Precio:</label>
-        <input type="number" step="0.01" name="precio" required><br><br>
-        <input type="submit" value="Crear">
+
+        <label>Email:</label><br>
+        <input type="email" name="email" required><br><br>
+
+        <label>Contraseña:</label><br>
+        <input type="password" name="password" required><br><br>
+
+        <label>Rol:</label><br>
+        <select name="rol">
+            <option value="usuario">Usuario</option>
+            <option value="admin">Administrador</option>
+        </select><br><br>
+
+        <input type="submit" value="Crear Usuario">
     </form>
-    <br>
-    <a href="read.php">Volver a la lista de productos</a>
+    <a href="dashboard.php">Volver</a>
 </body>
 </html>
