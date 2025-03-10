@@ -19,7 +19,7 @@ $usuarios = $stmt->fetchAll();
 </head>
 <body>
     <h1>Lista de Usuarios</h1>
-    
+        <table border="1">
         <tr>
             <th>ID</th>
             <th>Nombre</th>
